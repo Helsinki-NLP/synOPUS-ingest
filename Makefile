@@ -56,6 +56,7 @@ install-subalign: subalign
 
 OPUS-admin:
 	git clone git@github.com:Helsinki-NLP/OPUS-admin.git
+	cd OPUS-admin && git checkout synOPUS
 
 
 

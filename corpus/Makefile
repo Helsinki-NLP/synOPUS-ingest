@@ -111,7 +111,7 @@ ${OPUS_CORPORA_FETCHED}:
 ## fetch from the old containers
 ## NOTE: need to use the release project on allas!
 %.fetchold:
-	${MAKE} CONTAINER=project-OPUS-corpus ${@:.fetchold=.fetch}
+	${MAKE} CONTAINER=project-synOPUS-corpus ${@:.fetchold=.fetch}
 
 
 
@@ -170,7 +170,7 @@ ${OPUS_CORPORA_STORED}: %.stored: %
 
 ## run language identification on all corpora
 
-ALLRAW = ${wildcard /proj/nlpl/data/OPUS/*/latest/raw/*.zip}
+ALLRAW = ${wildcard /proj/nlpl/data/synOPUS/*/latest/raw/*.zip}
 ALLRAW_LANGID = ${subst /raw/,/raw-langid/,${ALLRAW}}
 
 run-langid: ${ALLRAW_LANGID}
@@ -229,7 +229,7 @@ delete_extra_done_files_on_allas:
 	  done; \
 	  c=`echo $$s | sed 's#^${OPUSRELEASE}/##' | cut -f1 -d/`; \
 	  echo "redo index files in ${OPUSRELEASE}/$$c"; \
-	  swift list OPUS-$$c > ${OPUSRELEASE}/$$c/index.txt; \
+	  swift list synOPUS-$$c > ${OPUSRELEASE}/$$c/index.txt; \
 	  rclone ls allas:OPUS-$$c --max-depth 5 > ${OPUSRELEASE}/$$c/index-filesize.txt; \
 	  ${OPUSTOOLS}/info2yaml.pl -b ${OPUSRELEASE}/$$c; \
 	done

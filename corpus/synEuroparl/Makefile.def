@@ -1,0 +1,16 @@
+# -*-makefile-*-
+#
+# name & version of the corpus
+
+CORPUS  = synEuroparl
+VERSION = v1
+
+SKIP_TOKENIZATION := 1
+
+
+# with SRCHTML you can define some extra HTML code that will be placed just
+# after the name of the sub-corpus
+# EXTRAHTML is code which will be put just after the 'Download' header
+
+SRCHTML = This is a collection of automatically translated documents from English Europarl v8 into other languages using GPT-4.
+EXTRAHTML =
