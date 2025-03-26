@@ -2,8 +2,8 @@
 #
 # name & version of the corpus
 
-CORPUS  = synEuroparl
-VERSION = v1
+CORPUS  = Europarl
+VERSION = v8syn
 
 SKIP_TOKENIZATION := 1
 

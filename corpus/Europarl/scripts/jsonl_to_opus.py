@@ -69,9 +69,10 @@ for line in sys.stdin:
         trgwriter.startDocument()
         trgwriter.startElement('text',{})
         trgwriter.characters("\n")
-        algwriter.startElement('linkGrp',{"fromDoc": f"{srclang}/{doc}","toDoc": f"{trglang}/{doc}"})
+        algwriter.startElement('linkGrp',{"fromDoc": f"{srclang}/{doc}.gz","toDoc": f"{trglang}/{doc}.gz"})
         algwriter.characters("\n")
         filename = doc
+        parid = ''
             
 
     if parid != pid:

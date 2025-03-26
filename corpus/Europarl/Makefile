@@ -1,8 +1,14 @@
+# -*-makefile-*-
+#
+
+
+include Makefile.def
+include ../Makefile.def
 
 
 SCRIPT_DIR    := $(CURDIR)/scripts
-ALIGNED_DIR   := $(CURDIR)/../aligned
-EUROPARL_DIR  := /projappl/nlpl/data/OPUS/Europarl/v8
+ALIGNED_DIR   := $(CURDIR)/src/aligned
+EUROPARL_DIR  := /projappl/nlpl/data/OPUS/${CORPUS}/v8
 
 LANGPAIRS     := $(sort $(notdir $(wildcard $(ALIGNED_DIR)/*-*)))
 ALIGN_XML     := $(addsuffix .xml.gz,${LANGPAIRS})
@@ -44,7 +50,7 @@ ENXX_ALIGN_XML := $(shell for s in ${TRG_LANGS}; do \
 .PHONY: all
 all: ${ALIGN_XML}
 	${MAKE} zipfiles multi multiparallel
-	find Europarl -delete
+	find ${CORPUS} -delete
 	find . -type l -name '*.xml.gz' -delete
 	${MAKE} move-files
 
@@ -54,8 +60,7 @@ move-files:
 	mkdir -p xml raw
 	mv *.zip raw/
 	mv *.xml.gz xml/
-	cp /projappl/nlpl/data/OPUS/Europarl/v8/raw/*.zip raw/
-
+	cp ${EUROPARL_DIR}/raw/*.zip raw/
 
 
 
@@ -79,7 +84,8 @@ ${TRG_ALIGN_XML}:
 	  t=$(lastword $(subst -, ,$(notdir $(@:.xml.gz=)))); \
 	  cd $(dir $@); \
 	  $(SCRIPT_DIR)/opus2multi $(CURDIR) en $$s $$t; \
-	  $(SCRIPT_DIR)/opus-pivoting en-$$s.xml en-$$t.xml | gzip -c > $(notdir $@); \
+	  $(SCRIPT_DIR)/opus-pivoting en-$$s.xml en-$$t.xml \
+	  | sed 's/\.xml/.xml.gz/g' | gzip -c > $(notdir $@); \
 	  rm -f en-$$s.xml en-$$t.xml; )
 
 ${ENXX_ALIGN_XML}:
@@ -128,11 +134,18 @@ ${ALIGN_XML}:
 zipfiles: ${LANG_ZIP}
 
 ${LANG_ZIP}:
-	mkdir -p Europarl/raw
-	mv $(@:.zip=) Europarl/raw/
-	zip -q -r $@ Europarl/raw/$(@:.zip=)
-	echo 'Europarl/raw/$(@:.zip=)' > Europarl/raw/$(@:.zip=)/INFO
-	echo 'Europarl'               >> Europarl/raw/$(@:.zip=)/INFO
-	echo 'vGPT4-2025'             >> Europarl/raw/$(@:.zip=)/INFO
-	zip -j $@ Europarl/raw/$(@:.zip=)/INFO
-	find Europarl/raw/$(@:.zip=) -delete
+	mkdir -p ${CORPUS}/raw
+	mv $(@:.zip=) ${CORPUS}/raw/
+	zip -q -r $@ ${CORPUS}/raw/$(@:.zip=)
+	echo '${CORPUS}/raw/$(@:.zip=)' > ${CORPUS}/raw/$(@:.zip=)/INFO
+	echo '${CORPUS}'               >> ${CORPUS}/raw/$(@:.zip=)/INFO
+	echo 'vGPT4-2025'              >> ${CORPUS}/raw/$(@:.zip=)/INFO
+	zip -j $@ ${CORPUS}/raw/$(@:.zip=)/INFO
+	find ${CORPUS}/raw/$(@:.zip=) -delete
+
+
+
+include ../Makefile.submit
+include ../Makefile.process
+include ../Makefile.release
+# include ../Makefile.cwb

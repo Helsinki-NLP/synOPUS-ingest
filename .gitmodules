@@ -4,3 +4,6 @@
 [submodule "synOPUS"]
 	path = synOPUS
 	url = ../synOPUS
+[submodule "synOPUS-website"]
+	path = synOPUS-website
+	url = ../synOPUS-website
