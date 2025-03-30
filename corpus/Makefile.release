@@ -447,7 +447,8 @@ SRCSRC := $(wildcard ${CORPUSXML}/${SRC}-*.xml.gz)
 
 
 # script for creating websites
-MAKEHTML   := opus-website
+# MAKEHTML   := opus-website
+MAKEHTML   := ${OPUSTOOLS}/opus-website
 
 ## some scripts for conversion
 TAB2TMX    := bitext2tmx
@@ -534,7 +535,7 @@ ifdef COPYRIGHT
 endif
 
 ifndef DOWNLOADINFO
-  DOWNLOADINFO=<p>Below you can download data files for all language pairs in different formats and with different kind of annotation (if available). You can click on the various links as explained below. In addition to the files shown on this webpage, OPUS also provides pre-compiled word alignments and phrase tables, bilingual dictionaries, frequency counts, and these files can be found through the <a href="/index.php">resources search form on the top-level website of OPUS</a>.</p><p>${LICENSEINFO}${COPYRIGHTINFO}</p>
+  DOWNLOADINFO=<p>Below you can download data files for all language pairs in different formats and with different kind of annotation (if available). You can click on the various links as explained below.</p><p>${LICENSEINFO}${COPYRIGHTINFO}</p>
 endif
 
 ifndef OTHERVERSIONS
@@ -581,8 +582,8 @@ ${OPUSPUB}/${CORPUS}-${VERSION}.php: ${PACKAGES} ${CORPUS_SAMPLES} ${ALG_SAMPLES
 	@chmod 755 ${OPUSPUB}/${CORPUS}
 	@chmod 755 ${OPUSPUB}/${CORPUS}/${VERSION}
 	@${MAKEHTML} -h ${OPUSPUB} -o ${OPUSHOME} -d ${OPUSRELEASE} -x ${CORPUSRELEASE}/xml ${CORPUS} ${VERSION} |\
-	sed -e 's|<h3>Download</h3>|<h3>Download</h3>${DOWNLOADINFO_SAFE}${EXTRAHTML_SAFE}${OTHERVERSIONS}|' \
-	    -e 's|<h3>Download</h3>|${CITENOTE_SAFE}<h3>Download</h3>|' \
+	sed -e 's|<h3>Download</h3>|<h3>Download</h3>${DOWNLOADINFO_SAFE}${EXTRAHTML_SAFE}|' \
+	    -e 's|<h3>Download</h3>|${CITENOTE_SAFE}${OTHERVERSIONS}<h3>Download</h3>|' \
 	    -e 's|<h1>${CORPUS}${VERSION}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
 	    -e 's|<h1>${CORPUS}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
 	    -e 's|<div class="footer">|${DISCLAIMER_SAFE}<div class="footer">|'          > $@
@@ -593,8 +594,8 @@ ${OPUSPUB}/${CORPUS}-${VERSION}.php: ${PACKAGES} ${CORPUS_SAMPLES} ${ALG_SAMPLES
 
 create-website-without-dependencies:
 	${MAKEHTML} -h ${OPUSPUB} -o ${OPUSHOME} -d ${OPUSRELEASE} -x ${CORPUSRELEASE}/xml ${CORPUS} ${VERSION} |\
-	sed -e 's|<h3>Download</h3>|<h3>Download</h3>${DOWNLOADINFO_SAFE}${EXTRAHTML_SAFE}${OTHERVERSIONS}|' \
-	    -e 's|<h3>Download</h3>|${CITENOTE_SAFE}<h3>Download</h3>|' \
+	sed -e 's|<h3>Download</h3>|<h3>Download</h3>${DOWNLOADINFO_SAFE}${EXTRAHTML_SAFE}|' \
+	    -e 's|<h3>Download</h3>|${CITENOTE_SAFE}${OTHERVERSIONS}<h3>Download</h3>|' \
 	    -e 's|<h1>${CORPUS}${VERSION}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
 	    -e 's|<h1>${CORPUS}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
 	    -e 's|<div class="footer">|${DISCLAIMER_SAFE}<div class=\"footer\">|' > ${OPUSPUB}/${CORPUS}-${VERSION}.php

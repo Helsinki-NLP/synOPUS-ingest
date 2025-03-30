@@ -1,0 +1,526 @@
+#!/usr/bin/perl
+#-*-perl-*-
+#
+# generate OPUS websites
+#
+#
+# UASGE: opus-website [OPTIONS] CORPUS VERSION > website.php
+#
+# CORPUS  = name of corpus (default current subdir)
+# VERSION = corpus version (default = v1)
+#
+# OPTIONS:
+#
+# -h <dir> ........ public_html dir
+# -d <dir> ........ release dir (for all downloads)
+# -o <dir> ........ OPUS home dir (otherwise extracted from PWD)
+# 
+
+
+## TESTING:
+##
+# perl opus-website -o .. Europarl v8syn > tt
+# scp tt ubuntu@193.166.25.9:.
+
+
+use CGI qw(:standard);
+use FindBin qw($Bin);
+use strict;
+# use DB_File;
+use Getopt::Std;
+use File::Basename;
+use YAML;
+
+
+use lib "$Bin/../../lib";
+use OPUS::Tools;
+use OPUS::Tools::ISO639 qw / iso639_TwoToThree iso639_ThreeToName /;
+
+
+our ($opt_m, $opt_o, $opt_d, $opt_h, $opt_r, $opt_x);
+getopts('m:o:d:h:r:x:');
+
+if (@ARGV != 2){
+    die "need to specift corpus and release version!\n"
+}
+
+my $CORPUS  = shift(@ARGV);
+my $VERSION = shift(@ARGV); # corpus version number
+
+
+
+my $OPUSHOME    = $ENV{PWD};
+$OPUSHOME       =~s/(OPUS|OPUS-ingest)\/.*$/$1/;
+$OPUSHOME       = $opt_o if (-d $opt_o);
+my $RELEASEHOME = $opt_d || $OPUSHOME."/releases";
+my $HTMLHOME    = $opt_h || $OPUSHOME."/public_html";
+my $MAXLANG     = $opt_m || 25;  # max languages before repeating IDs in tables
+
+$OPUS::Tools::OPUS_HOME = $OPUSHOME;
+$OPUS::Tools::OPUS_PUBLIC = $HTMLHOME;
+$OPUS::Tools::INFODB_HOME = $HTMLHOME;
+
+## release directories
+##
+## RELEASEBASE = relative path within RELEASEHOME
+## RELEASEDIR  = absolute path for the release
+
+my $RELEASEBASE = $CORPUS.'/'.$VERSION;
+my $RELEASEDIR  = $RELEASEHOME.'/'.$RELEASEBASE;
+my $INFODIR     = $RELEASEDIR.'/info';
+my $xmldir      = $opt_x || $RELEASEDIR.'/xml';  # tokenized
+my $rawdir      = $opt_r || $RELEASEDIR.'/raw';  # untokenized
+
+#-------------------------------------------------------------------------
+
+my $CorpusStatsFile = $RELEASEDIR.'/statistics.yaml';
+my $CorpusStats = YAML::LoadFile($CorpusStatsFile) || die "error reading $CorpusStatsFile";
+die "no data found in $CorpusStatsFile"    unless (ref($CorpusStats) eq 'HASH');
+die "no bitexts found in $CorpusStatsFile" unless (ref($$CorpusStats{bitexts}) eq 'HASH');
+
+my ($srclangs,$trglangs) = &GetLanguages($CorpusStats);
+
+sub GetLanguages{
+    my $CorpusStats = shift;
+
+    my %srclangs = ();
+    my %trglangs = ();
+    
+    if (exists $$CorpusStats{bitexts}){
+	foreach (keys %{$$CorpusStats{bitexts}}){
+	    my ($srclang,$trglang) = split(/\-/);
+	    $srclangs{$srclang}++;
+	    $trglangs{$trglang}++;
+	}
+    }
+    return (\%srclangs,\%trglangs);
+}
+
+
+binmode(STDOUT,":encoding(utf-8)");
+
+### TODO: can we skip this now?
+print STDERR "store info in DB ...\n";
+&store_info($CORPUS,$VERSION,$$CorpusStats{bitexts});
+
+my $header=&HtmlHeader();
+$header=~s/^.*(\<\!DOCTYPE)/$1/s;     # skip Content-Type
+$header=~s/\<base href=[^\>]+\>//s;   # skip <base href="..." />
+print '<?php include("count.php"); ?>',"\n";
+print $header;
+print &h1($CORPUS);
+
+my $nrLanguages = scalar keys %{$$CorpusStats{monolingual}};
+my $nrBitexts   = scalar keys %{$$CorpusStats{bitexts}};
+my $nrFiles     = 0;
+my $nrSentences = 0;
+my $nrTokens    = 0;
+
+foreach my $l (sort keys %{$$CorpusStats{monolingual}}){
+    $nrFiles += $$CorpusStats{monolingual}{$l}{files};
+    $nrSentences += $$CorpusStats{monolingual}{$l}{sentences};
+    $nrTokens += $$CorpusStats{monolingual}{$l}{tokens};
+}
+
+print("<p>".&thousands($nrLanguages)." languages, ".&thousands($nrBitexts)." bitexts</br>\n");
+print("total number of files: ".&thousands($nrFiles)."</br>\n");
+print("total number of tokens: ".&pretty_number($nrTokens)."</br>\n");
+print("total number of sentences: ".&pretty_number($nrSentences)."</br></p>\n");
+
+print &h3('Download');
+
+print("<p><a onclick=\"toggleSection('samples')\">Corpus sample files (click to toggle)</a></p>");
+print("<div id='samples' style='display: none;'>\n");
+print &SampleTable($$CorpusStats{bitexts},$srclangs,$trglangs);
+print('</div>');
+
+if (my $TableHtml = &DownloadTable($CorpusStats,$srclangs,$trglangs)){
+    print("<p><a onclick=\"toggleSection('download-xml')\">Download corpus in their native XML format (click to toggle)</a>\n");
+    print("<div id='download-xml'>You need to download the monolingual corpus files and the standoff alignment files between them:\n");
+    print("<ul><li>Links on the language IDs of the top row and first column: zip-files of untokenized monolingual XML files</li>\n");
+    print("<li>Links on the language IDs of the bottom row and last column: zip-files of tokenized monolingual XML files (if they exist)</li>\n");
+    print("<li>Links in the table: Sentence alignment files in XCES Align format (standoff annotation)</li>\n</ul>\n</p>\n");
+    print($TableHtml);
+    print('</div>');
+}
+
+if (my $TableHtml = &DownloadTable($CorpusStats,$srclangs,$trglangs,'moses')){
+    print("<p><a onclick=\"toggleSection('download-moses')\">Download corpus in plain text format (click to toggle)</a>\n");
+    print("<div id='download-moses' style='display: none;'>Links to zip-files with aligned plain text files, one per language (Moses format).</p>\n");
+    print($TableHtml);
+    print('</div>');
+}
+
+if (my $TableHtml = &DownloadTable($CorpusStats,$srclangs,$trglangs,'tmx')){
+    print("<p><a onclick=\"toggleSection('download-tmx')\">Download corpus in TMX format (click to toggle)</a>\n");
+    print("<div id='download-tmx' style='display: none;'>Links to compressed TMX files, one per language pair.</p>\n");
+    print($TableHtml);
+    print('</div>');
+}
+
+
+print &HtmlEnd();
+
+
+
+
+
+sub size_color{
+    my $nr=shift;
+
+    # my $avg = 50000;
+    # my $good = 20*$avg;
+
+    my $avg = 2000000;
+    my $good = 20*$avg;
+
+    my $diff = $nr-$avg;
+
+    my $red=255;
+    my $green=255;
+    my $blue=255;
+
+    if ($diff<0){
+	my $change1 = int((0-$diff/$avg)**6*48);
+	my $change2 = int(($diff/$avg+1)*32);
+	$green-=$change1;
+	$blue-=$change1+$change2;
+#	$red-=$change2;
+    }
+    else{
+	my $change1 = int(($diff/$good)**0.25*48);
+	my $change2 = 0;
+	if ($diff<$good){
+	    $change2 = int((1-$diff/$good)*32);
+	}
+	$change1 = 64 if ($change1>64);
+	$red-=$change1;
+	$blue-=$change1+$change2;
+    }
+    return sprintf "#%x%x%x",$red,$green,$blue;
+}
+
+sub pretty_number{
+    my $nr=shift;
+    my $dec = shift || 1;
+
+    if ($nr>1000000000){
+	return sprintf "%.${dec}fG",$nr/1000000000;
+    }
+    if ($nr>100000){
+	return sprintf "%.${dec}fM",$nr/1000000;
+    }
+    if ($nr>100){
+	return sprintf "%.${dec}fk",$nr/1000;
+    }
+    return $nr;
+}
+
+sub thousands{
+    my $nr=shift;
+    $nr =~ s/(\d)(?=(\d{3})+(\D|$))/$1\,/g;
+    return $nr;
+}
+
+
+sub BitextStatistics{
+    my $bitext = shift;
+
+    my $nrFiles = exists $$bitext{files} ? $$bitext{files} : 0;
+    my $nrLinks = exists $$bitext{alignments} ? $$bitext{alignments} : exists $$bitext{'translation units'} ? $$bitext{'translation units'} : 0;
+    my $nrSrcTok = exists $$bitext{'source language tokens'} ? $$bitext{'source language tokens'} : 0;
+    my $nrTrgTok = exists $$bitext{'target language tokens'} ? $$bitext{'target language tokens'} : 0;
+    
+    return ($nrFiles,$nrLinks,$nrSrcTok,$nrTrgTok);
+}
+
+
+#-------------------------------------------------------------------------
+# create corpus sample table
+#-------------------------------------------------------------------------
+
+sub SampleTable{
+    my $bitexts  = shift;
+    my $srclangs = shift;
+    my $trglangs = shift;
+
+    my $SRCCOUNT=0;
+    my $TRGCOUNT=0;
+
+    my $HTML = "<table border=\"0\" cellpadding=\"0\">\n";
+
+    #---------------------------------
+    # first line: links to target language sample files
+    #---------------------------------
+
+    $HTML .= "<tr><th></th>\n";
+    foreach my $t (sort keys %{$trglangs}){
+	$TRGCOUNT++;
+	if ($TRGCOUNT>$MAXLANG){
+	    $HTML.="<th></th>\n";
+	    $TRGCOUNT=0;
+	}
+	$HTML.="<th><a rel=\"nofollow\" href=\"$CORPUS/$VERSION/$t\_sample.html\">$t</a></th>\n";
+    }
+    $HTML .= "<th></th></tr>\n";
+
+    #---------------------------------------
+    # print bitext matrix
+    #---------------------------------------
+    
+    $SRCCOUNT=0;
+    foreach my $s (sort keys %{$srclangs}){
+
+	## extra rows to repeat the target language IDs
+	
+	$SRCCOUNT++;
+	if ($SRCCOUNT>$MAXLANG){
+	    $TRGCOUNT=0;
+	    $HTML .= "<tr><th></th>\n";
+	    foreach my $t (sort keys %{$trglangs}){
+		$TRGCOUNT++;
+		if ($TRGCOUNT>$MAXLANG){
+		    $HTML.="<th></th>\n";
+		    $TRGCOUNT=0;
+		}
+		$HTML .= "<th>$t</th>\n";
+	    }
+	    $HTML .= "<th></th></tr>\n";
+	    $SRCCOUNT=0;
+	}
+	
+	## one row per source language
+	
+	$HTML.="<tr><th><a rel=\"nofollow\" href=\"$CORPUS/$VERSION/$s\_sample.html\">$s</a></th>\n";
+	my $SrcLangName = &iso639_ThreeToName(&iso639_TwoToThree($s));
+	$TRGCOUNT=0;
+	foreach my $t (sort keys %{$trglangs}){
+	    $TRGCOUNT++;
+	    if ($TRGCOUNT>$MAXLANG){
+		$HTML.="<th></th>\n";
+		$TRGCOUNT=0;
+	    }
+	    $HTML .= '<td>';
+	    if (exists $$bitexts{"$s-$t"}){
+		my $TrgLangName = &iso639_ThreeToName(&iso639_TwoToThree($t));
+		$HTML.="<a rel=\"nofollow\" title=\"$SrcLangName-$TrgLangName (sample file)\" href=\"$CORPUS/$VERSION/$s-$t\_sample.html\">view</a>";
+	    }
+	    $HTML .= '</td>';
+	}
+	$HTML.="<th><a rel=\"nofollow\" href=\"$CORPUS/$VERSION/$s\_sample.html\">$s</a></th></tr>\n";
+    }
+
+    $HTML .= "<tr><th></th>\n";
+    $TRGCOUNT=0;
+    foreach my $t (sort keys %{$trglangs}){
+	$TRGCOUNT++;
+	if ($TRGCOUNT>$MAXLANG){
+	    $HTML.="<th></th>\n";
+	    $TRGCOUNT=0;
+	}
+	$HTML.="<th><a rel=\"nofollow\" href=\"$CORPUS/$VERSION/$t\_sample.html\">$t</a></th>\n";
+    }
+    $HTML .= "<th></th></tr>\n";    
+    $HTML.="</table>\n";
+    return &div({-class=>'sample'},$HTML);
+}
+
+
+
+
+#-------------------------------------------------------------------------
+# create corpus sample table
+#-------------------------------------------------------------------------
+
+sub DownloadTable{
+    my $corpusinfo = shift;
+    my $srclangs   = shift;
+    my $trglangs   = shift;
+    my $type       = shift || 'bitexts';  # bitexts, tmx or moses
+
+    my $bitexts = $$corpusinfo{$type};
+
+    ## release directories and file extension
+    ## depend on download type
+
+    my $RELEASE_DIR = $RELEASEBASE.'/xml';
+    my $RELEASE_EXT = 'xml.gz';
+    if ($type eq 'tmx'){
+	$RELEASE_DIR = $RELEASEBASE.'/tmx';
+	$RELEASE_EXT = 'tmx.gz';
+    }
+    elsif ($type eq 'moses'){
+	$RELEASE_DIR = $RELEASEBASE.'/moses';
+	$RELEASE_EXT = 'txt.zip';
+    }
+
+    ## for bitexts: add links to language zip files
+    ## otherwise: just a regular table cell with the langid
+    
+    my %LangRawCells = ();
+    my %LangXmlCells = ();
+
+    if (exists $$corpusinfo{monolingual}){
+	foreach my $t (sort keys %{$$corpusinfo{monolingual}}){
+	    $LangRawCells{$t} = "<th>$t</th>\n";
+	    $LangXmlCells{$t} = "<th>$t</th>\n";
+	    if ($type eq 'bitexts'){
+		if (exists $$corpusinfo{monolingual}){
+		    if (exists $$corpusinfo{monolingual}{$t}){
+			my $nrFiles = &thousands($$corpusinfo{monolingual}{$t}{files});
+			my $nrSents = &pretty_number($$corpusinfo{monolingual}{$t}{sentences});
+			my $nrToks = &pretty_number($$corpusinfo{monolingual}{$t}{tokens});
+			if (exists $$corpusinfo{monolingual}{$t}{downloads}){
+			    if (exists $$corpusinfo{monolingual}{$t}{downloads}{xml}){
+				if (exists $$corpusinfo{monolingual}{$t}{downloads}{xml}{url}){
+				    my $LinkTitle = "$t.zip: untokenized XML documents ($nrFiles files, $nrSents sentences, $nrToks tokens)";
+				    $LangRawCells{$t} = "<th><a rel=\"nofollow\" title=\"$LinkTitle\" href=\"download.php?f=$RELEASEBASE/raw/$t.zip\">$t</a></th>\n";
+				}
+			    }
+			    if (exists $$corpusinfo{monolingual}{$t}{downloads}{'tokenized xml'}){
+				if (exists $$corpusinfo{monolingual}{$t}{downloads}{'tokenized xml'}{url}){
+				    my $LinkTitle = "$t.zip: tokenized XML documents ($nrFiles files, $nrSents sentences, $nrToks tokens)";
+				    $LangXmlCells{$t} = "<th><a rel=\"nofollow\" title=\"$LinkTitle\" href=\"download.php?f=$RELEASEBASE/xml/$t.zip\">$t</a></th>\n";
+				}
+			    }
+			}
+		    }
+		}
+	    }
+	}
+    }
+    
+    my $BITEXTCOUNT=0;
+    my $SRCCOUNT=0;
+    my $TRGCOUNT=0;
+
+    my $HTML = "<table border=\"0\" cellpadding=\"0\">\n";
+    $HTML .= "<tr><th></th>\n";
+
+    foreach my $t (sort keys %{$trglangs}){
+	$TRGCOUNT++;
+	if ($TRGCOUNT>$MAXLANG){
+	    $HTML .= "<th></th>\n";
+	    $TRGCOUNT=0;
+	}
+	$HTML .= $LangRawCells{$t};
+    }
+    $HTML.="<th></th></tr>\n";
+    
+    $SRCCOUNT=0;
+    foreach my $s (sort keys %{$srclangs}){
+
+	## extra rows to repeat the target language IDs
+	
+	$SRCCOUNT++;
+	if ($SRCCOUNT>$MAXLANG){
+	    $TRGCOUNT=0;
+	    $HTML .= "<tr><th></th>\n";
+	    foreach my $t (sort keys %{$trglangs}){
+		$TRGCOUNT++;
+		if ($TRGCOUNT>$MAXLANG){
+		    $HTML.="<th></th>\n";
+		    $TRGCOUNT=0;
+		}
+		$HTML .= "<th>$t</th>\n";
+	    }
+	    $HTML .= "<th></th></tr>\n";
+	    $SRCCOUNT=0;
+	}
+	
+	## one row per source language
+	
+	$HTML .= $LangRawCells{$s};
+	$TRGCOUNT=0;
+	foreach my $t (sort keys %{$trglangs}){
+	    $TRGCOUNT++;
+	    if ($TRGCOUNT>$MAXLANG){
+		$HTML.="<th></th>\n";
+		$TRGCOUNT=0;
+	    }
+	    if (exists $$corpusinfo{$type}{"$s-$t"}){
+		$BITEXTCOUNT++;
+		my $SrcLang = &iso639_ThreeToName(&iso639_TwoToThree($s));
+		my $TrgLang = &iso639_ThreeToName(&iso639_TwoToThree($t));
+		my ($nrFiles,$nrLinks,$nrSrc,$nrTrg) = &BitextStatistics($$corpusinfo{$type}{"$s-$t"});
+		my $title="$SrcLang-$TrgLang (";
+		$title .= &thousands($nrFiles)." aligned documents " if ($nrFiles>1);
+		$title .= &pretty_number($nrLinks)." links "         if ($nrLinks);
+		$title .= &pretty_number($nrSrc+$nrTrg)." tokens "   if ($nrSrc+$nrTrg);
+		$title .= ")";
+		my $bgcolor = size_color($nrLinks*10);
+		$HTML .= "<td bgcolor='$bgcolor'>";
+		$HTML .= "<a rel=\"nofollow\" title=\"$title\" href=\"download.php?f=$RELEASE_DIR/$s-$t.$RELEASE_EXT\">";
+		$HTML .= &pretty_number($nrLinks);
+		$HTML .= "</a></td>\n";
+	    }
+	    else{$HTML.="<td></td>\n";}
+	}
+
+    	$HTML .= $LangXmlCells{$s}.'</tr>';
+    }
+
+    $HTML .= "<tr><th></th>\n";
+    $TRGCOUNT=0;
+    foreach my $t (sort keys %{$trglangs}){
+	$TRGCOUNT++;
+	if ($TRGCOUNT>$MAXLANG){
+	    $HTML.="<th></th>\n";
+	    $TRGCOUNT=0;
+	}
+	$HTML .= $LangXmlCells{$t};
+    }
+    $HTML .= "<th></th></tr>\n</table>\n";
+    $HTML = &div({-class=>'sample'},$HTML);
+    return $BITEXTCOUNT ? $HTML : '';
+}
+
+
+
+sub HtmlHeader{
+    my $css="index.css";
+    my $HTML=&header(-charset => 'utf-8');
+    $HTML.=&start_html(-title => $CORPUS,
+		       -author => 'opus-project',
+		       -base=>'true',
+		       -dtd=>1,
+		       -meta=>{robots => 'NOFOLLOW'},
+		       -style=>{'src'=>$css},
+		       -encoding => 'utf-8');
+
+    $HTML .= '<div class="header"><?php include("header.php"); ?></div>',"\n";
+
+    $HTML .= '<script>
+function toggleSection(c) {
+  var x = document.getElementById(c);
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+}
+</script>';
+    
+    return $HTML;
+}
+
+sub HtmlEnd{
+    my $HTML=&div({-class=>'footer'},'');
+    $HTML.=&end_html;
+    return &hr.$HTML;
+}
+
+
+
+sub store_info{
+    my $corpus = shift;
+    my $release = shift;
+    my $bitexts = shift;  # hash of bitexts (xces alignment files
+
+    foreach my $b (keys %{$bitexts}){
+	my ($src,$trg) = split(/\-/,$b);
+	set_corpus_info($corpus,$release,$src,$trg);
+    }
+}
+
+
