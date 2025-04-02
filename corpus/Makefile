@@ -37,6 +37,26 @@
 
 
 
+fix-wiki:
+	rm Wiki*/src/wiki*.*.eng-hrv
+	rm Wiki*/src/wiki*.*.eng-ind
+	rm Wiki*/src/wiki*.*.eng-zsm_Latn
+	rm Wiki*/src/wiki*.*.eng-nds
+	rm Wiki*/src/wiki*.*.eng-tgl
+	rm Wiki*/src/wiki*.*.eng-uzb_Latn
+	rm Wiki*/src/wiki*.*.eng-zho
+	for w in Wiki Wikibooks Wikipedia Wikiquote Wikisource; do \
+	  for l in hr id ms_Latn nds tl uz_Latn zh; do \
+	    rm -f $$w/raw/$$l/*.xml.gz; \
+	    rm -fr $$w/xml/en-$$l; \
+	    rm -f $$w/raw/en/*.xml.gz; \
+	  done \
+	done
+	for w in Wiki Wikibooks Wikipedia Wikiquote Wikisource; do \
+	  make -C $$w/src HPC_DISK=100 all.submit; \
+	done
+
+
 include Makefile.def
 
 ## container base name

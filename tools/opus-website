@@ -129,33 +129,39 @@ print("total number of sentences: ".&pretty_number($nrSentences)."</br></p>\n");
 
 print &h3('Download');
 
-print("<p><a onclick=\"toggleSection('samples')\">Corpus sample files (click to toggle)</a></p>");
+print("<ul><li><a onclick=\"toggleSection('samples')\">Corpus sample files (click to show)</a></li>");
+if (my $TableHtml = &DownloadTable($CorpusStats,$srclangs,$trglangs)){
+    print("<li><a onclick=\"toggleSection('download-xml')\">Download corpus in their native XML format (click to show)</a></li>\n");
+}
+if (my $TableHtml = &DownloadTable($CorpusStats,$srclangs,$trglangs,'moses')){
+    print("<li><a onclick=\"toggleSection('download-moses')\">Download corpus in plain text format (click to show)</a></li>\n");
+}
+print("</ul>");
+
 print("<div id='samples' style='display: none;'>\n");
+print("<p>Links to sample files from monolingual corpus files (language-ID links) and bitexts (click on 'view')</p><p>");
 print &SampleTable($$CorpusStats{bitexts},$srclangs,$trglangs);
-print('</div>');
+print('</p></div>');
 
 if (my $TableHtml = &DownloadTable($CorpusStats,$srclangs,$trglangs)){
-    print("<p><a onclick=\"toggleSection('download-xml')\">Download corpus in their native XML format (click to toggle)</a>\n");
-    print("<div id='download-xml'>You need to download the monolingual corpus files and the standoff alignment files between them:\n");
+    print("<div id='download-xml'><p>You need to download the monolingual corpus files and the standoff alignment files between them:\n");
     print("<ul><li>Links on the language IDs of the top row and first column: zip-files of untokenized monolingual XML files</li>\n");
     print("<li>Links on the language IDs of the bottom row and last column: zip-files of tokenized monolingual XML files (if they exist)</li>\n");
-    print("<li>Links in the table: Sentence alignment files in XCES Align format (standoff annotation)</li>\n</ul>\n</p>\n");
+    print("<li>Links in the table: Sentence alignment files in XCES Align format (standoff annotation)</li>\n</ul>\n</p><p>\n");
     print($TableHtml);
-    print('</div>');
+    print('</p></div>');
 }
 
 if (my $TableHtml = &DownloadTable($CorpusStats,$srclangs,$trglangs,'moses')){
-    print("<p><a onclick=\"toggleSection('download-moses')\">Download corpus in plain text format (click to toggle)</a>\n");
-    print("<div id='download-moses' style='display: none;'>Links to zip-files with aligned plain text files, one per language (Moses format).</p>\n");
+    print("<div id='download-moses' style='display: none;'><p>Links to zip-files with aligned plain text files, one per language (Moses format).</p><p>\n");
     print($TableHtml);
-    print('</div>');
+    print('</p></div>');
 }
 
 if (my $TableHtml = &DownloadTable($CorpusStats,$srclangs,$trglangs,'tmx')){
-    print("<p><a onclick=\"toggleSection('download-tmx')\">Download corpus in TMX format (click to toggle)</a>\n");
-    print("<div id='download-tmx' style='display: none;'>Links to compressed TMX files, one per language pair.</p>\n");
+    print("<div id='download-tmx' style='display: none;'><p>Links to compressed TMX files, one per language pair.</p><p>\n");
     print($TableHtml);
-    print('</div>');
+    print('</p></div>');
 }
 
 
@@ -492,11 +498,18 @@ sub HtmlHeader{
 
     $HTML .= '<script>
 function toggleSection(c) {
+  var d = ["samples","download-xml","download-tmx","download-moses"];
+  for (var i = 0; i < d.length; i++) {
+    if ( d[i] != c) {
+      var y = document.getElementById(d[i]);
+      if (y.style.display != "none"){
+        y.style.display = "none";
+      }
+    }
+  }
   var x = document.getElementById(c);
-  if (x.style.display === "none") {
-    x.style.display = "block";
-  } else {
-    x.style.display = "none";
+  if (x.style.display != "block"){
+     x.style.display = "block";
   }
 }
 </script>';

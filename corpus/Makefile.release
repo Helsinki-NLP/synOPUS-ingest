@@ -153,6 +153,11 @@ DERIVED_INFOFILES := ${TXT_INFO} ${TMX_INFO}
 
 ## special variables for skipping certain packages
 
+ifdef SKIP_TMX
+  DERIVED_PACKAGES  := $(MOSES) ${SMT} ${WORDALG} ${DIC}
+  DERIVED_INFOFILES := ${TMX_INFO}
+endif
+
 ifdef SKIP_TOKENIZATION_AND_DERIVED_DATA
   SKIP_TOKENIZATION := 1
   SKIP_DERIVED      := 1
@@ -161,6 +166,7 @@ endif
 ifdef SKIP_BITEXT_INFO
   BASIC_INFOFILES := ${LANG_INFO}
 endif
+
 
 
 ## unless we skip tokenization: add tokenized release packages
@@ -539,7 +545,9 @@ ifndef DOWNLOADINFO
 endif
 
 ifndef OTHERVERSIONS
+ifneq ($(wildcard ${OPUSPUB}/${CORPUS}-v*.php),)
   OTHERVERSIONS=<h3>Release history:</h3><p><ul>${shell find ${OPUSPUB}/ -name '${CORPUS}-v*.php' -printf "%f\n" | sort | sed 's/${CORPUS}-\(v.*\).php/<li><a href=\"${CORPUS}-\1.php\">${CORPUS} \1<\/a><\/li>/'}</ul></p>
+endif
 endif
 
 ifndef DISCLAIMER
@@ -576,29 +584,36 @@ DISCLAIMER_SAFE   = $(subst &,\&,$(subst ',&apos;,${DISCLAIMER}))
 # '
 
 
-${OPUSPUB}/${CORPUS}-${VERSION}.php: ${PACKAGES} ${CORPUS_SAMPLES} ${ALG_SAMPLES} ${INFOFILES}
-	@${MKDIR} $(dir $@)
-	@chmod 755 ${dir $@}
-	@chmod 755 ${OPUSPUB}/${CORPUS}
-	@chmod 755 ${OPUSPUB}/${CORPUS}/${VERSION}
-	@${MAKEHTML} -h ${OPUSPUB} -o ${OPUSHOME} -d ${OPUSRELEASE} -x ${CORPUSRELEASE}/xml ${CORPUS} ${VERSION} |\
-	sed -e 's|<h3>Download</h3>|<h3>Download</h3>${DOWNLOADINFO_SAFE}${EXTRAHTML_SAFE}|' \
-	    -e 's|<h3>Download</h3>|${CITENOTE_SAFE}${OTHERVERSIONS}<h3>Download</h3>|' \
-	    -e 's|<h1>${CORPUS}${VERSION}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
-	    -e 's|<h1>${CORPUS}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
-	    -e 's|<div class="footer">|${DISCLAIMER_SAFE}<div class="footer">|'          > $@
-	@chmod 644 $@
-	cd ${OPUSPUB} && git add $(notdir $@)
-	cd ${OPUSPUB} && git add ${CORPUS}/${VERSION}
+# ${OPUSPUB}/${CORPUS}-${VERSION}.php: ${PACKAGES} ${CORPUS_SAMPLES} ${ALG_SAMPLES} ${INFOFILES}
+# 	@${MKDIR} $(dir $@)
+# 	@chmod 755 ${dir $@}
+# 	@chmod 755 ${OPUSPUB}/${CORPUS}
+# 	@chmod 755 ${OPUSPUB}/${CORPUS}/${VERSION}
+# 	@${MAKEHTML} -h ${OPUSPUB} -o ${OPUSHOME} -d ${OPUSRELEASE} -x ${CORPUSRELEASE}/xml ${CORPUS} ${VERSION} |\
+# 	sed -e 's|<h3>Download</h3>|<h3>Download</h3>${DOWNLOADINFO_SAFE}${EXTRAHTML_SAFE}|' \
+# 	    -e 's|<h3>Download</h3>|${CITENOTE_SAFE}${OTHERVERSIONS}<h3>Download</h3>|' \
+# 	    -e 's|<h1>${CORPUS}${VERSION}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
+# 	    -e 's|<h1>${CORPUS}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
+# 	    -e 's|<div class="footer">|${DISCLAIMER_SAFE}<div class="footer">|'          > $@
+# 	@chmod 644 $@
+# 	cd ${OPUSPUB} && git add $(notdir $@)
+# 	cd ${OPUSPUB} && git add ${CORPUS}/${VERSION}
 
 
-create-website-without-dependencies:
+# create-website-without-dependencies:
+${OPUSPUB}/${CORPUS}-${VERSION}.php:
+	@mkdir -p ${OPUSPUB}/${CORPUS}/${VERSION}
+	@chmod 755 ${OPUSPUB}
 	${MAKEHTML} -h ${OPUSPUB} -o ${OPUSHOME} -d ${OPUSRELEASE} -x ${CORPUSRELEASE}/xml ${CORPUS} ${VERSION} |\
 	sed -e 's|<h3>Download</h3>|<h3>Download</h3>${DOWNLOADINFO_SAFE}${EXTRAHTML_SAFE}|' \
 	    -e 's|<h3>Download</h3>|${CITENOTE_SAFE}${OTHERVERSIONS}<h3>Download</h3>|' \
 	    -e 's|<h1>${CORPUS}${VERSION}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
 	    -e 's|<h1>${CORPUS}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
 	    -e 's|<div class="footer">|${DISCLAIMER_SAFE}<div class=\"footer\">|' > ${OPUSPUB}/${CORPUS}-${VERSION}.php
+	@chmod 644 ${OPUSPUB}/${CORPUS}-${VERSION}.php
+	cd ${OPUSPUB} && git add ${CORPUS}-${VERSION}.php
+	cd ${OPUSPUB} && git add ${CORPUS}/${VERSION}
+
 
 
 ${OPUSPUB}/${CORPUS}.php: ${OPUSPUB}/${CORPUS}-${VERSION}.php

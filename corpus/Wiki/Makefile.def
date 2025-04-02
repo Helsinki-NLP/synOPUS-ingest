@@ -1,0 +1,32 @@
+# -*-makefile-*-
+#
+# name & version of the corpus
+
+
+CORPUS  := Wiki
+VERSION := v1syn
+
+LICENSE   := <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC-BY-SA 4.0</a>
+COPYRIGHT  = 
+
+WIKITYPE          := wiki
+SKIP_TOKENIZATION := 1
+SKIP_TMX          := 1
+
+
+SRCHTML = <a href="https://github.com/Helsinki-NLP/Tatoeba-Challenge/blob/master/data/Backtranslations.md">Automatically translated data sets</a> that can be used for data augmentation Translations have been done with models trained on the Tatoeba MT challenge data. We include translations of Wikipedia, WikiSource, WikiBooks, WikiNews and WikiQuote (if available for the source language we translate from). Translations are done on shuffled, de-duplicated data sets and they come in blocks of at most one million sentences per file. The original datasets are taken from <a href="https://dumps.wikimedia.org/other/cirrussearch/">cirrussearch wiki dumps</a>. The original back-translations have been checked with the <a href="https://pypi.org/project/heliport/">heliport language identification tool</a> and mismatched sentence pairs are excluded from this distribution.
+
+
+# EXTRAHTML = Simple example corpus
+
+CITENOTE= Please, acknowledge the Wikimedia Foundation for the data and cite the following paper if you use data from this distribution: \
+<pre>\
+@inproceedings{tiedemann-2020-ttc,\
+    title = "The {T}atoeba {T}ranslation {C}hallenge -- {R}ealistic Data Sets for Low Resource and Multilingual {MT}",\
+    author = {Tiedemann, J{\"o}rg},\
+    booktitle = "Proceedings of the Fifth Conference on Machine Translation (Volume 1: Research Papers)",\
+    year = "2020",\
+    publisher = "Association for Computational Linguistics",\
+    url = {https://arxiv.org/abs/2010.06354}\
+}\
+</pre>
