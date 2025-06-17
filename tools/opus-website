@@ -303,7 +303,7 @@ sub SampleTable{
 	foreach my $t (sort keys %{$trglangs}){
 	    $TRGCOUNT++;
 	    if ($TRGCOUNT>$MAXLANG){
-		$HTML.="<th></th>\n";
+		$HTML.="<th>$s</th>\n";
 		$TRGCOUNT=0;
 	    }
 	    $HTML .= '<td>';
@@ -441,7 +441,7 @@ sub DownloadTable{
 	foreach my $t (sort keys %{$trglangs}){
 	    $TRGCOUNT++;
 	    if ($TRGCOUNT>$MAXLANG){
-		$HTML.="<th></th>\n";
+		$HTML.="<th>$s</th>\n";
 		$TRGCOUNT=0;
 	    }
 	    if (exists $$corpusinfo{$type}{"$s-$t"}){

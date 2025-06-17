@@ -6,23 +6,39 @@ include Makefile.def
 include ../Makefile.def
 
 
-## make all:
-## - convert (see below)
-## - annotate (tokenize/tag/chunk depending on Makefile that is included)
-## - udparse (parse with UDPipe)
-## - publish (various packages, cwb index, website etc)
-## - wordalign
-
 .PHONY: all
 all:
 	${MAKE} -C src all
-	${MAKE} publish
+	${MAKE} xml/Makefile
+	${MAKE} -C xml create-align-files
+	${MAKE} delete-empty-bitexts
+	${MAKE} release
 
-.PHONY: import
-import:
-	${MAKE} convert
-	${MAKE} annotate
 
+fix:
+	zgrep '<linkGrp' xml/*.xml.gz | grep -v fromDoc | cut -f1 -d: | sort -u | xargs rm
+	${MAKE} all
+
+fix-xmlalg:
+	@for l in $(wildcard xml/*.xml.gz); do \
+	  mv $$l $$l.tmp; \
+	  zcat $$l.tmp | tidy -w -xml -i | gzip -c > $$l; \
+	done
+#	  if [ `zcat $$l | grep '</linkGrp>' | wc -l` -gt 1 ]; then \
+#	    echo "$$l"; \
+#	    mv $$l $$l.tmp.gz; \
+#	    zcat $$l.tmp.gz | sed 's|</linkGrp>||' | sed 's|</cesAlign>|</linkGrp></cesAlign>|' \
+#	    | gzip -c > $$l; \
+#	  fi \
+#	done
+
+# fix-db:
+# 	for d in $(patsubst %.db,%,$(notdir $(wildcard raw/*/*.db))); do \
+# 	  l=`echo $$d | cut -f3 -d.`; \
+# 	  b=`echo $$d | cut -f1,2 -d.`; \
+# 	  mkdir -p db/$$l; \
+# 	  mv raw/$$l/$$d.db db/$$l/$$b.db; \
+# 	done
 
 
 ## standard procedures are specified in the following makefiles

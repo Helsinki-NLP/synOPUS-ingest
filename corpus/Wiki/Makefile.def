@@ -1,7 +1,21 @@
 # -*-makefile-*-
 #
 # name & version of the corpus
-
+#
+# TODO: better way of defining multiline citation block
+# (maybe https://gist.github.com/azatoth/1030091)
+# define multiline content in variables:
+# --------------------
+# define data
+# foo
+# bar
+# baz
+# endef
+# export data
+# all:
+# 	@echo "$$data"
+# --------------------
+#
 
 CORPUS  := Wiki
 VERSION := v1syn
@@ -21,12 +35,12 @@ SRCHTML = <a href="https://github.com/Helsinki-NLP/Tatoeba-Challenge/blob/master
 
 CITENOTE= Please, acknowledge the Wikimedia Foundation for the data and cite the following paper if you use data from this distribution: \
 <pre>\
-@inproceedings{tiedemann-2020-ttc,\
-    title = "The {T}atoeba {T}ranslation {C}hallenge -- {R}ealistic Data Sets for Low Resource and Multilingual {MT}",\
-    author = {Tiedemann, J{\"o}rg},\
+@inproceedings{tiedemann-2020-ttc,<br/>\
+    title = "The {T}atoeba {T}ranslation {C}hallenge -- {R}ealistic Data Sets for Low Resource and Multilingual {MT}",<br/>\
+    author = {Tiedemann, J{\"o}rg},<br/>\
     booktitle = "Proceedings of the Fifth Conference on Machine Translation (Volume 1: Research Papers)",\
-    year = "2020",\
-    publisher = "Association for Computational Linguistics",\
-    url = {https://arxiv.org/abs/2010.06354}\
+    year = "2020",<br/>\
+    publisher = "Association for Computational Linguistics",<br/>\
+    url = {https://arxiv.org/abs/2010.06354}<br/>\
 }\
 </pre>

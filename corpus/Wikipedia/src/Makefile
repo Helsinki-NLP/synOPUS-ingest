@@ -4,7 +4,6 @@ include ../Makefile.def
 include ../../Makefile.def
 
 
-WIKITYPE = wikipedia
 
 TATOEBA_GITRAW     := https://raw.githubusercontent.com/Helsinki-NLP/Tatoeba-Challenge/refs/heads/master
 TATOEBA_BT_INFO    := ${TATOEBA_GITRAW}/data/Backtranslations.md
@@ -12,7 +11,7 @@ TATOEBA_BT_STORAGE := https://object.pouta.csc.fi/Tatoeba-MT-bt
 
 
 WIKI_SOURCES  := $(sort $(shell wget -qq -O - ${TATOEBA_BT_INFO} | grep '${WIKITYPE}\.' | cut -f2 -d'[' | cut -f1 -d']' | cut -f1-3 -d.))
-MONOXML_FILES := $(patsubst %.db,%.xml.gz,$(wildcard ../raw/*/*.db))
+MONOXML_FILES := $(patsubst ../db/%.db,../raw/%.xml.gz,$(wildcard ../db/*/*.db))
 
 
 ## file-locking for exclusive access to certain DBs
@@ -36,7 +35,8 @@ info:
 .PHONY: db2xml
 db2xml: ${MONOXML_FILES}
 
-${MONOXML_FILES}: ../raw/%.xml.gz: ../raw/%.db
+${MONOXML_FILES}: ../raw/%.xml.gz: ../db/%.db
+	mkdir -p $(dir $@)
 	${OPUSTOOLS}/db2xml.py -d $< | gzip -c > $@
 
 ${WIKI_SOURCES}:
@@ -57,29 +57,25 @@ ${WIKI_SOURCES}:
 	  wget -qq -O $$b.$$p.$$S.gz ${TATOEBA_BT_STORAGE}/$$p/latest/$$b.$$p.$$s.gz; \
 	  wget -qq -O $$b.$$p.$$T.gz ${TATOEBA_BT_STORAGE}/$$p/latest/$$b.$$p.$$t.gz; \
 	  wget -qq -O $@ ${TATOEBA_BT_STORAGE}/$$p/latest/README.md; \
-	  mkdir -p ../xml/$$S-$$T ../raw/$$S ../raw/$$T; \
+	  mkdir -p ../xml/$$S-$$T ../db/$$S ../db/$$T; \
 	  echo '<?xml version="1.0" encoding="UTF-8"?>'                        > ../xml/$$S-$$T/$$b.xml; \
 	  echo '<!DOCTYPE cesAlign PUBLIC "-//CES//DTD XML cesAlign//EN" "">' >> ../xml/$$S-$$T/$$b.xml; \
 	  echo '<cesAlign version="1.0">'                                     >> ../xml/$$S-$$T/$$b.xml; \
-	  echo "<linkGrp targType=\"s\" fromDoc=\"$$S/$$b.xml.gz\" toDoc=\"$$T/$$b.xml.gz\">" >> ../xml/$$S-$$T/$$b.xml; \
-	  mkdir -p ${TMPDIR}/WIKICONVERT; \
-	  if [ -e ../raw/$$S/$$b.$$S.db ]; then rsync ../raw/$$S/$$b.$$S.db ${TMPDIR}/WIKICONVERT/; fi; \
-	  if [ -e ../raw/$$T/$$b.$$T.db ]; then rsync ../raw/$$T/$$b.$$T.db ${TMPDIR}/WIKICONVERT/; fi; \
+	  echo "<linkGrp targType=\"s\" fromDoc=\"$$S/$$b.src.xml.gz\" toDoc=\"$$T/$$b.trg.xml.gz\">" >> ../xml/$$S-$$T/$$b.xml; \
+	  mkdir -p ${TMPDIR}/WIKICONVERT/$$S ${TMPDIR}/WIKICONVERT/$$T; \
+	  if [ -e ../db/$$S/$$b.src.db ]; then rsync ../db/$$S/$$b.src.db ${TMPDIR}/WIKICONVERT/$$S/; fi; \
+	  if [ -e ../db/$$T/$$b.trg.db ]; then rsync ../db/$$T/$$b.trg.db ${TMPDIR}/WIKICONVERT/$$T/; fi; \
 	  ${OPUSTOOLS}/moses2db.py -t $$T \
 				-sf $$b.$$p.$$S.gz \
 				-tf $$b.$$p.$$T.gz \
-				-sdb ${TMPDIR}/WIKICONVERT/$$b.$$S.db \
-				-tdb ${TMPDIR}/WIKICONVERT/$$b.$$T.db \
+				-sdb ${TMPDIR}/WIKICONVERT/$$S/$$b.src.db \
+				-tdb ${TMPDIR}/WIKICONVERT/$$T/$$b.trg.db \
 		>> ../xml/$$S-$$T/$$b.xml; \
-	  rsync ${TMPDIR}/WIKICONVERT/$$b.$$S.db ../raw/$$S/; \
-	  rsync ${TMPDIR}/WIKICONVERT/$$b.$$T.db ../raw/$$T/; \
+	  rsync ${TMPDIR}/WIKICONVERT/$$S/$$b.src.db ../db/$$S/; \
+	  rsync ${TMPDIR}/WIKICONVERT/$$T/$$b.trg.db ../db/$$T/; \
 	  echo '</linkGrp>'  >> ../xml/$$S-$$T/$$b.xml; \
 	  echo '</cesAlign>' >> ../xml/$$S-$$T/$$b.xml; \
 	  gzip -f ../xml/$$S-$$T/$$b.xml; \
 	  rm -f $$b.$$p.$$S.gz $$b.$$p.$$T.gz; \
 	) 9> ${LOCKFILE_DIR}/$(word 1,$(subst ., ,$@)).$(word 2,$(subst ., ,$@)).lock
 
-
-#	  cd ../raw; \
-#	  moses2opus -z -s $$S -t $$T -b $$b.$$p ../src/$$b.$$p.$$S.gz ../src/$$b.$$p.$$T.gz \
-#	  | gzip -c > ../xml/$$S-$$T/$$b.$$p.xml.gz )

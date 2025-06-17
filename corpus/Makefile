@@ -53,7 +53,7 @@ fix-wiki:
 	  done \
 	done
 	for w in Wiki Wikibooks Wikipedia Wikiquote Wikisource; do \
-	  make -C $$w/src HPC_DISK=100 all.submit; \
+	  make -C $$w/src HPC_MEM=8g HPC_DISK=100 all.submit; \
 	done
 
 

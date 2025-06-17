@@ -181,6 +181,8 @@ endif
 ifdef SKIP_DERIVED
   SELECTED_PACKAGES := ${BASIC_PACKAGES}
   INFOFILES         := ${BASIC_INFOFILES}
+  SKIP_TMX          := 1
+  SKIP_MOSES        := 1
 else ifeq ($(shell test $(words ${CES}) -gt 10000; echo $$?),0)
   SELECTED_PACKAGES := ${BASIC_PACKAGES}
   INFOFILES         := ${BASIC_INFOFILES}
@@ -601,7 +603,20 @@ DISCLAIMER_SAFE   = $(subst &,\&,$(subst ',&apos;,${DISCLAIMER}))
 
 
 # create-website-without-dependencies:
-${OPUSPUB}/${CORPUS}-${VERSION}.php:
+${OPUSPUB}/${CORPUS}-${VERSION}.php: ${CORPUS_SAMPLES} ${ALG_SAMPLES} ${INFOFILES}
+	@mkdir -p ${OPUSPUB}/${CORPUS}/${VERSION}
+	@chmod 755 ${OPUSPUB}
+	${MAKEHTML} -h ${OPUSPUB} -o ${OPUSHOME} -d ${OPUSRELEASE} -x ${CORPUSRELEASE}/xml ${CORPUS} ${VERSION} |\
+	sed -e 's|<h3>Download</h3>|<h3>Download</h3>${DOWNLOADINFO_SAFE}${EXTRAHTML_SAFE}|' \
+	    -e 's|<h3>Download</h3>|${CITENOTE_SAFE}${OTHERVERSIONS}<h3>Download</h3>|' \
+	    -e 's|<h1>${CORPUS}${VERSION}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
+	    -e 's|<h1>${CORPUS}</h1>|<h1>${CORPUS} ${VERSION}</h1>${SRCHTML_SAFE}|' \
+	    -e 's|<div class="footer">|${DISCLAIMER_SAFE}<div class=\"footer\">|' > ${OPUSPUB}/${CORPUS}-${VERSION}.php
+	@chmod 644 ${OPUSPUB}/${CORPUS}-${VERSION}.php
+	cd ${OPUSPUB} && git add ${CORPUS}-${VERSION}.php
+	cd ${OPUSPUB} && git add ${CORPUS}/${VERSION}
+
+create-website-without-dependencies:
 	@mkdir -p ${OPUSPUB}/${CORPUS}/${VERSION}
 	@chmod 755 ${OPUSPUB}
 	${MAKEHTML} -h ${OPUSPUB} -o ${OPUSHOME} -d ${OPUSRELEASE} -x ${CORPUSRELEASE}/xml ${CORPUS} ${VERSION} |\
@@ -716,7 +731,7 @@ endif
 	@echo "OPUS Website: http://opus.nlpl.eu/synthetic" >> $@
 	@echo "" >>$@
 #	@echo "${CITENOTE}" | sed 's/<[^>]*>//g' >> $@
-	@echo "$(subst ",\",${CITENOTE})" >> $@                        # escape "
+	@echo '${CITENOTE_SAFE}'         >> $@                        # escape "
 	@echo "" >>$@
 	@echo "$(subst ",\",${SRCHTML})"   | sed 's/<[^>]*>//g' >> $@  # escape " and remove HTML
 	@echo "$(subst ",\",${EXTRAHTML})" | sed 's/<[^>]*>//g' >> $@  # escape " and remove HTML
@@ -933,7 +948,7 @@ alg_samples: ${ALG_SAMPLES}
 # else
 
 
-ifdef SKIP_DERIVED
+ifdef SKIP_TMX
 
 ${ALG_SAMPLES}: ${CORPUSPUB}/%_sample.html: ${CORPUSRELEASE}/xml/%.xml.gz
 	@${MKDIR} ${dir $@}
@@ -1419,6 +1434,14 @@ ${OPUSRELEASE}/${CORPUS}/info.txt: $(wildcard ${OPUSRELEASE}/${CORPUS}/*.info)
 #	cat $@ $@.new | sort -k1,1 -k2,2n -t: -u > $@.merged
 #	mv $@.merged $@
 #	rm -f $@.new
+
+
+delete-empty-algfiles:
+	find ${CORPUSXML} -path '*-*/*.xml.gz' | xargs zgrep -L 'xtargets' | xargs rm
+
+delete-empty-rawfiles:
+	find ${CORPUSRAW} -name '*.xml.gz' | xargs zgrep -L '</s>' | xargs rm
+
 
 delete-empty-bitexts:
 	mkdir -p ${CORPUSHOME}/DELETE/xml

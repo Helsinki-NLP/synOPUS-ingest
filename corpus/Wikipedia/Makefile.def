@@ -9,6 +9,7 @@ VERSION := v1syn
 LICENSE   := <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC-BY-SA 4.0</a>
 COPYRIGHT  = 
 
+WIKITYPE          := wikipedia
 SKIP_TOKENIZATION := 1
 SKIP_TMX          := 1
 
@@ -20,12 +21,12 @@ SRCHTML = <a href="https://github.com/Helsinki-NLP/Tatoeba-Challenge/blob/master
 
 CITENOTE= Please, acknowledge the Wikimedia Foundation for the data and cite the following paper if you use data from this distribution: \
 <pre>\
-@inproceedings{tiedemann-2020-ttc,\
-    title = "The {T}atoeba {T}ranslation {C}hallenge -- {R}ealistic Data Sets for Low Resource and Multilingual {MT}",\
-    author = {Tiedemann, J{\"o}rg},\
+@inproceedings{tiedemann-2020-ttc,<br/>\
+    title = "The {T}atoeba {T}ranslation {C}hallenge -- {R}ealistic Data Sets for Low Resource and Multilingual {MT}",<br/>\
+    author = {Tiedemann, J{\"o}rg},<br/>\
     booktitle = "Proceedings of the Fifth Conference on Machine Translation (Volume 1: Research Papers)",\
-    year = "2020",\
-    publisher = "Association for Computational Linguistics",\
-    url = {https://arxiv.org/abs/2010.06354}\
+    year = "2020",<br/>\
+    publisher = "Association for Computational Linguistics",<br/>\
+    url = {https://arxiv.org/abs/2010.06354}<br/>\
 }\
 </pre>
