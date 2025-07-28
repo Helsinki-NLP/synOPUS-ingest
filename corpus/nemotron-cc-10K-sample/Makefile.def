@@ -1,0 +1,34 @@
+# -*-makefile-*-
+#
+# name & version of the corpus
+#
+# TODO: better way of defining multiline citation block
+# (maybe https://gist.github.com/azatoth/1030091)
+# define multiline content in variables:
+# --------------------
+# define data
+# foo
+# bar
+# baz
+# endef
+# export data
+# all:
+# 	@echo "$$data"
+# --------------------
+#
+
+CORPUS  := nemotron-cc-10K-sample
+VERSION := v1syn
+
+LICENSE   := <a href="https://creativecommons.org/licenses/by/4.0/">CC-BY 4.0</a>
+COPYRIGHT  = 
+
+SKIP_TOKENIZATION := 1
+SKIP_TMX          := 1
+
+
+SRCHTML = <a href="https://github.com/Helsinki-NLP/translate-fineweb">Automatically translated data</a> from a small <a href="https://huggingface.co/datasets/spyysalo/nemotron-cc-10K-sample">10K sample taken out of Nemotron-CC</a>. Translations are done by <a href="https://github.com/Helsinki-NLP/Opus-MT">OPUS-MT models</a> selected from the <a href="https://opus.nlpl.eu/dashboard/">OPUS-MT Dashboard</a>.
+
+
+# EXTRAHTML = Simple example corpus
+# CITENOTE= 
