@@ -1,0 +1,49 @@
+# -*-makefile-*-
+#
+# name & version of the corpus
+#
+# TODO: better way of defining multiline citation block
+# (maybe https://gist.github.com/azatoth/1030091)
+# define multiline content in variables:
+# --------------------
+# define data
+# foo
+# bar
+# baz
+# endef
+# export data
+# all:
+# 	@echo "$$data"
+# --------------------
+#
+
+CORPUS    := nemotron-cc-translated
+VERSION   := v1syn
+LANGUAGES := bg bs ca cs da de el en es et eu fi fr ga gl hr hu is it ka lt lv mk mt nb nl nn pl pt ro sk sl sq sr_Cyrl sv tr uk
+
+LICENSE   := <a href="https://creativecommons.org/licenses/by/4.0/">CC-BY 4.0</a>
+COPYRIGHT  = 
+
+SKIP_TOKENIZATION           := 1
+SKIP_DERIVED                := 1
+SKIP_README_IN_ZIPFILES     := 1
+BITEXT_COUNTS_FROM_LANGINFO := 1
+LANGINFO_USE_TMPFILE        := 1
+
+# SKIP_TMX          := 1
+# SKIP_BITEXT_INFO  := 1
+
+## for transweb-edu we use the HPLT project
+CSC_RELEASE_PROJECT := project_2005815
+
+## project to use BUs from
+CSC_PROJECT := project_462001087
+HOST        := lumi
+FLASHDIR    := /flash/${CSC_PROJECT}
+
+
+SRCHTML = <a href="https://github.com/Helsinki-NLP/translate-fineweb">Automatically translated data</a> from a subset of <a href="https://huggingface.co/datasets/lehduong/nemotron-cc-hq">nemotron-cc-hq</a> dataset. Translations are done by <a href="https://github.com/Helsinki-NLP/Opus-MT">OPUS-MT models</a> selected from the <a href="https://opus.nlpl.eu/mt/">OPUS-MT Dashboard</a>.
+
+
+# EXTRAHTML = Simple example corpus
+# CITENOTE= 

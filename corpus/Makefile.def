@@ -116,8 +116,9 @@ endif
 # endif
 
 
-CESALG_FILES ?= $(wildcard ${CORPUSXML}/*.xml.gz)
-LANGPAIRS    ?= $(patsubst ${CORPUSXML}/%.xml.gz,%,${CESALG_FILES})
+CESALG_FILES  ?= $(wildcard ${CORPUSXML}/*.xml.gz)
+LANGPAIR_DIRS := $(notdir $(shell find ${CORPUSXML} -maxdepth 1 -mindepth 1 -type d))
+LANGPAIRS     ?= $(sort $(patsubst ${CORPUSXML}/%.xml.gz,%,${CESALG_FILES}) $(LANGPAIR_DIRS))
 
 
 ifeq (${LANGPAIRS},)

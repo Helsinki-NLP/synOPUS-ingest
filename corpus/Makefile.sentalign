@@ -292,25 +292,47 @@ ${SRC}-${TRG}/%: ${SRC}/% ${TRG}/%
 
 
 
-# make only the alignment files for each language pair
 
-# .PHONY: create-align-files
-# create-align-files:
-# 	for s in ${LANGUAGES}; do \
-# 	  for t in ${LANGUAGES}; do \
-# 	    if [ "$$s" != "$$t" ]; then \
-# 	      if [ -d "$$s-$$t" ]; then \
-# 		make SRC=$$s TRG=$$t create-align-file; \
-# 	      fi \
-# 	    fi \
-# 	  done \
-# 	done
+
+COMBINED_SENTALIGN_FILES = $(patsubst %,%.xml.all,${LANGPAIRS})
+
+.PHONY: create-align-files
+create-align-files: ${COMBINED_SENTALIGN_FILES}
+
+
+.PHONY: ${COMBINED_SENTALIGN_FILES}
+${COMBINED_SENTALIGN_FILES}:
+	if [ -d $(@:.xml.all=) ]; then \
+	  find $(@:.xml.all=)/ -type f -name '*.xml.gz' | sort |\
+	  xargs zgrep --no-filename 'link' |\
+	  sed 's/\.xml"/\.xml.gz"/g' >> $@.links; \
+	  if [ -s $@.links ]; then \
+	    echo '<?xml version="1.0" encoding="utf-8"?>' >$@.tmp; \
+	    echo '<!DOCTYPE cesAlign PUBLIC "-//CES//DTD XML cesAlign//EN" "">' >>$@.tmp; \
+	    echo '<cesAlign version="1.0">' >> $@.tmp; \
+	    cat $@.links >> $@.tmp; \
+	    echo '</cesAlign>' >> $@.tmp; \
+	    gzip -f $@.tmp; \
+	    if [ -e $(@:.all=.gz) ]; then \
+	      echo "merge $(@:.all=.gz) $@.tmp.gz"; \
+	      opus-merge-align $(@:.all=.gz) $@.tmp.gz |\
+	      gzip -c > $@.tmp2.gz; \
+	      mv -f $@.tmp2.gz $(@:.all=.gz); \
+	      rm -f $@.tmp.gz; \
+	    else \
+	      mv -f $@.tmp.gz $(@:.all=.gz); \
+	    fi; \
+	  fi; \
+	  rm -f $@.links; \
+	  find $(@:.xml.all=) -delete; \
+	fi
 
 
 ## NEW: avoid calling make for each langpair
 ## --> this can be quite slow for some big corpora!
 
-create-align-files:
+.PHONY: create-align-files-loop
+create-align-files-loop:
 	for s in ${LANGUAGES}; do \
 	  for t in ${LANGUAGES}; do \
 	      if [ -d "$$s-$$t" ]; then \
@@ -342,6 +364,21 @@ create-align-files:
 	      fi \
 	  done \
 	done
+
+
+# make only the alignment files for each language pair
+
+# .PHONY: create-align-files
+# create-align-files:
+# 	for s in ${LANGUAGES}; do \
+# 	  for t in ${LANGUAGES}; do \
+# 	    if [ "$$s" != "$$t" ]; then \
+# 	      if [ -d "$$s-$$t" ]; then \
+# 		make SRC=$$s TRG=$$t create-align-file; \
+# 	      fi \
+# 	    fi \
+# 	  done \
+# 	done
 
 
 ## new: merge with existing alignment file instead of overwriting it!

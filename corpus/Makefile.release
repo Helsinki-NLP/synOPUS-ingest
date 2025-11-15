@@ -810,6 +810,7 @@ ${LANG_RAW} ${LANG_XML}:
 	  ${MAKE} $(patsubst ${CORPUSRELEASE}/%,${TMPDIR}/${CORPUS}/%,$@); \
 	  mv -f $(patsubst ${CORPUSRELEASE}/%,${TMPDIR}/${CORPUS}/%,$@) $@; \
 	fi
+ifndef SKIP_README_IN_ZIPFILES
 	mkdir -p $@.d
 	${MAKE} PACKAGE=$(patsubst ${CORPUSRELEASE}/%.zip,${CORPUS}/%,$@) $@.d/README $@.d/LICENSE
 	echo "$(patsubst ${CORPUSRELEASE}/%.zip,${CORPUS}/%,$@)"  > $@.d/INFO
@@ -817,6 +818,7 @@ ${LANG_RAW} ${LANG_XML}:
 	echo "${VERSION}"                                        >> $@.d/INFO
 	cd $@.d && zip -u -q $@ INFO README LICENSE
 	find $@.d -delete
+endif
 	chmod 644 $@
 
 
@@ -1273,12 +1275,13 @@ lang_info: ${LANG_INFO}
 
 ifdef SKIP_TOKENIZATION
 
+
 ${LANG_INFO}: ${CORPUSRELEASE}/info/%.info: ${CORPUSRELEASE}/raw/%.zip
 	${MKDIR} ${dir $@}
 	if [ ! -e $@ ]; then \
-	  unzip -Z1 $< '*.xml'                     | wc -l > $@; \
-	  unzip -p $< '*.xml' | grep -o '</s>'     | wc -l >> $@; \
-	  unzip -p $< '*.xml' | sed 's/<[^>]*>//g' | wc -w >> $@; \
+	  unzip -Z1 $< '*.xml'                        | wc -l > $@; \
+	  unzip -p $< '*.xml' | grep --text -o '</s>' | wc -l >> $@; \
+	  unzip -p $< '*.xml' | sed 's/<[^>]*>//g'    | wc -w >> $@; \
 	  chmod 644 $@; \
 	fi
 
@@ -1287,9 +1290,9 @@ else
 ${LANG_INFO}: ${CORPUSRELEASE}/info/%.info: ${CORPUSRELEASE}/raw/%.zip ${CORPUSRELEASE}/xml/%.zip
 	${MKDIR} ${dir $@}
 	if [ ! -e $@ ]; then \
-	  unzip -Z1 $(word 1,$^) '*.xml'                  | wc -l > $@; \
-	  unzip -p  $(word 1,$^) '*.xml' | grep -o '</s>' | wc -l >> $@; \
-	  unzip -p  $(word 2,$^) '*.xml' | grep -o '</w>' | wc -l >> $@; \
+	  unzip -Z1 $(word 1,$^) '*.xml'                         | wc -l > $@; \
+	  unzip -p  $(word 1,$^) '*.xml' | grep --text -o '</s>' | wc -l >> $@; \
+	  unzip -p  $(word 2,$^) '*.xml' | grep --text -o '</w>' | wc -l >> $@; \
 	  chmod 644 $@; \
 	fi
 
@@ -1381,7 +1384,7 @@ log/.bitext-word-counts:
 ## save word counts to support making info files above
 ${CORPUSXML}/%.counts.gz: ${CORPUSXML}/%.xml.gz
 	@mkdir -p ${dir $@}
-	${GZIP} -cd < $< | opus-countwords | grep . | gzip -c > $@
+	${GZIP} -cd < $< | opus-countwords | grep --text . | gzip -c > $@
 
 
 ## TODO: are those db-targets still in use?
