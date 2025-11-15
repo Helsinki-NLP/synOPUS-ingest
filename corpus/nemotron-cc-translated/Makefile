@@ -25,7 +25,7 @@ xml-consolidate:
 ## test and compare some counts
 
 TRANSLATE_DIR = /users/tiedeman/research/translate-fineweb/maxidl/nemotron-cc-english-run1/translated
-OPUS_RELEASE_DIR = /users/tiedeman/synOPUS-ingest/releases/nemotron-cc-translated
+OPUS_RELEASE_DIR = /users/tiedeman/research/synOPUS-ingest/releases/nemotron-cc-translated
 
 count-de:
 	pigz -cd ${TRANSLATE_DIR}/txt/deu/*.txt.gz | wc -w > $@
